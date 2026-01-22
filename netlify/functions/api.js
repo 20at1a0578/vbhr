@@ -113,18 +113,38 @@ router.post("/applications/restore/:id", async (req, res) => {
 
 router.post("/send-mail", async (req, res) => {
   const { email, name, pdfData } = req.body;
+
+  if (!email || !name || !pdfData) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
   try {
     await transporter.sendMail({
       from: '"V Believers HR" <pallemaheshreddy200@gmail.com>',
       to: email,
       subject: `Selection Letter - ${name}`,
       text: `Dear ${name},\n\nPlease find your Selection Letter attached.`,
-      attachments: [{ filename: `${name}_Letter.pdf`, path: pdfData }]
+      attachments: [
+        {
+          filename: `${name}_Letter.pdf`,
+          path: pdfData
+        }
+      ]
     });
-    await new Log({ action: "EMAIL_SENT", details: `Sent to ${name}` }).save();
-    res.json({ message: "Email Sent Successfully" });
-  } catch (err) { res.status(500).json({ error: "Mail failed" }); }
+
+    await new Log({
+      action: "EMAIL_SENT",
+      details: `Sent to ${email}`
+    }).save();
+
+    return res.status(200).json({ message: "Email sent successfully" });
+
+  } catch (err) {
+    console.error("MAIL ERROR:", err);
+    return res.status(400).json({ error: "Mail sending failed" });
+  }
 });
+
 
 // 5. NETLIFY HANDLER EXPORT
 app.use("/api", router);
