@@ -94,7 +94,15 @@ router.delete("/applications/:id", async (req, res) => {
     await Application.findByIdAndUpdate(req.params.id, { isDeleted: true });
     res.json({ message: "Deleted" });
 });
-
+// --- Add this below your router.delete in api.js ---
+router.post("/applications/restore/:id", async (req, res) => {
+    try {
+        await Application.findByIdAndUpdate(req.params.id, { isDeleted: false });
+        res.json({ message: "Restored successfully" });
+    } catch (err) {
+        res.status(500).json({ error: "Restore failed" });
+    }
+});
 router.post("/send-mail", async (req, res) => {
   const { email, name, pdfData } = req.body;
   try {
