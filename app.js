@@ -3,7 +3,8 @@ if (localStorage.getItem("isLoggedIn") !== "true") {
     window.location.href = "auth.html";
 }
 
-const API_URL = "/api"; // Your Live Render URL
+// Set this to just "/api" because your netlify.toml handles the rest
+const API_URL = "/api"; 
 
 window.logout = () => {
     localStorage.removeItem("isLoggedIn");
@@ -19,8 +20,8 @@ let isBinOpen = false;
 
 async function loadData() {
   try {
-    // Corrected endpoint
-    const response = await fetch(`${API_URL}/api/applications?bin=${isBinOpen}`);
+    // Corrected: Removed the extra "/api" from the template literal
+    const response = await fetch(`${API_URL}/applications?bin=${isBinOpen}`);
     if (!response.ok) return;
     const applications = await response.json();
     renderTable(applications);
@@ -68,8 +69,8 @@ form.onsubmit = async (e) => {
     const id = $("docId").value;
 
     if (!id) {
-        // Updated to Live URL
-        const checkResponse = await fetch(`${API_URL}/api/check-duplicate/${regNo}`);
+        // Corrected URL
+        const checkResponse = await fetch(`${API_URL}/check-duplicate/${regNo}`);
         const checkResult = await checkResponse.json();
         if (checkResult.exists) {
             alert(`⚠️ Error: Registration Number ${regNo} already exists for ${checkResult.name}!`);
@@ -94,8 +95,8 @@ form.onsubmit = async (e) => {
         status: $("status").value
     };
 
-    // Updated to Live URL
-    const response = await fetch(`${API_URL}/api/applications`, {
+    // Corrected URL
+    const response = await fetch(`${API_URL}/applications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(d)
@@ -110,7 +111,8 @@ form.onsubmit = async (e) => {
 };
 
 window.editApp = async (id) => {
-    const response = await fetch(`${API_URL}/api/applications?bin=false`);
+    // Corrected URL
+    const response = await fetch(`${API_URL}/applications?bin=false`);
     const apps = await response.json();
     const app = apps.find(a => a._id === id);
     if (app) {
@@ -134,13 +136,15 @@ window.editApp = async (id) => {
 
 window.deleteApp = async (id) => {
     if(confirm("Move this application to Bin?")) {
-        await fetch(`${API_URL}/api/applications/${id}`, { method: 'DELETE' });
+        // Corrected URL
+        await fetch(`${API_URL}/applications/${id}`, { method: 'DELETE' });
         loadData();
     }
 };
 
 window.restoreApp = async (id) => {
-    await fetch(`${API_URL}/api/applications/restore/${id}`, { method: 'POST' });
+    // Corrected URL
+    await fetch(`${API_URL}/applications/restore/${id}`, { method: 'POST' });
     alert("Application Restored!");
     loadData();
 };
@@ -166,5 +170,4 @@ $("clearFilters").onclick = () => {
 };
 
 fillDropdowns();
-
 loadData();
