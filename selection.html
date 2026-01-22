@@ -110,11 +110,31 @@ p{ margin:6px 0 6px 8px; text-align:justify; }
       7075110436
     </div>
   </div>
-</div>
-,<script>
-// Inside selection.html script
+</div><script>
+// 1. Load data automatically when the page opens
+window.onload = function() {
+    const dataStr = localStorage.getItem("letterData");
+    if (dataStr) {
+        const data = JSON.parse(dataStr);
+        document.getElementById("regNo").textContent = data.regNo || "";
+        document.getElementById("name").textContent = data.name || "Applicant Name";
+        document.getElementById("docTitle").textContent = `${data.name} - Selection Letter`;
+        document.getElementById("district").textContent = data.district || "District";
+        document.getElementById("phone").textContent = data.phone || "Phone Number";
+        document.getElementById("circleDate").textContent = data.circleDate || "DD/MM/YYYY";
+        window.currentEmail = data.email;
+    }
+};
+
+// 2. Generate PDF and Send via Netlify Function
 async function sendEmail() {
     const btn = document.querySelector(".email-btn");
+    
+    if (!window.currentEmail) {
+        alert("❌ Error: No email found for this applicant.");
+        return;
+    }
+
     btn.innerText = "⏳ Generating PDF...";
     btn.disabled = true;
 
@@ -122,17 +142,19 @@ async function sendEmail() {
         const { jsPDF } = window.jspdf;
         const element = document.querySelector(".letter");
 
+        // Capture letter as image
         const canvas = await html2canvas(element, { scale: 2, useCORS: true });
         const imgData = canvas.toDataURL('image/png');
 
+        // Convert image to PDF
         const pdf = new jsPDF('p', 'mm', 'a4');
         pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
         const pdfBase64 = pdf.output('datauristring');
 
         const name = document.getElementById("name").innerText;
         
-        // CORRECTED URL HERE:
-        const response = await fetch('https://appl-r2if.onrender.com/send-mail', {
+        // UPDATED URL for Netlify Functions
+        const response = await fetch('/api/send-mail', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -143,13 +165,14 @@ async function sendEmail() {
         });
 
         if (response.ok) {
-            alert("✅ Success! Letter attached as PDF and sent to " + window.currentEmail);
+            alert("✅ Success! Letter sent to " + window.currentEmail);
         } else {
-            alert("❌ Failed to send. Check server logs.");
+            const errorData = await response.json();
+            alert("❌ Failed: " + (errorData.error || "Check server logs"));
         }
     } catch (err) {
         console.error(err);
-        alert("❌ Error generating or sending PDF.");
+        alert("❌ Error: Could not connect to the server.");
     } finally {
         btn.innerText = "✉ Send PDF via Email";
         btn.disabled = false;
@@ -157,4 +180,5 @@ async function sendEmail() {
 }
 </script>
 </body>
+
 </html>
