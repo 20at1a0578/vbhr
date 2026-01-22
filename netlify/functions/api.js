@@ -127,7 +127,7 @@ router.post("/send-mail", async (req, res) => {
 });
 
 // 5. NETLIFY HANDLER EXPORT
-app.use("/.netlify/functions/api", router);
+app.use("/api", router);
 const handler = serverless(app);
 
 module.exports.handler = async (event, context) => {
