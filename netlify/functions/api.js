@@ -11,13 +11,22 @@ const router = express.Router();
 app.use(express.json({ limit: '50mb' })); 
 app.use(cors());
 
-// 1. DATABASE CONNECTION
+// 1. DATABASE CONNECTION (Optimized for Netlify)
 const mongoURI = "mongodb+srv://mahesh_21:teI4gVKu0Vnzqy2y@cluster0.gnikcjh.mongodb.net/vbelievers?retryWrites=true&w=majority&appName=Cluster0";
 
-// Connect once (Netlify functions can reuse connections)
-if (mongoose.connection.readyState === 0) {
-    mongoose.connect(mongoURI);
-}
+let cachedDb = null;
+
+const connectToDatabase = async () => {
+    // If a connection exists, reuse it
+    if (mongoose.connection.readyState === 1) {
+        return mongoose.connection;
+    }
+    
+    // Otherwise, create a new connection with a timeout
+    return await mongoose.connect(mongoURI, {
+        serverSelectionTimeoutMS: 5000
+    });
+};
 
 // 2. SCHEMAS
 const appSchema = new mongoose.Schema({
@@ -48,9 +57,7 @@ const transporter = nodemailer.createTransport({
   tls: { rejectUnauthorized: false }
 });
 
-// 4. ROUTES (Attached to 'router')
-const MASTER_RECOVERY_KEY = "VB-2026-ADMIN";
-
+// 4. ROUTES
 router.post("/auth/register", async (req, res) => {
     try {
         const { username, password } = req.body;
@@ -94,7 +101,7 @@ router.delete("/applications/:id", async (req, res) => {
     await Application.findByIdAndUpdate(req.params.id, { isDeleted: true });
     res.json({ message: "Deleted" });
 });
-// --- Add this below your router.delete in api.js ---
+
 router.post("/applications/restore/:id", async (req, res) => {
     try {
         await Application.findByIdAndUpdate(req.params.id, { isDeleted: false });
@@ -103,6 +110,7 @@ router.post("/applications/restore/:id", async (req, res) => {
         res.status(500).json({ error: "Restore failed" });
     }
 });
+
 router.post("/send-mail", async (req, res) => {
   const { email, name, pdfData } = req.body;
   try {
@@ -118,6 +126,11 @@ router.post("/send-mail", async (req, res) => {
   } catch (err) { res.status(500).json({ error: "Mail failed" }); }
 });
 
-// 5. NETLIFY EXPORT
+// 5. NETLIFY HANDLER EXPORT
 app.use("/.netlify/functions/api", router);
-module.exports.handler = serverless(app);
+const handler = serverless(app);
+
+module.exports.handler = async (event, context) => {
+    await connectToDatabase(); // Ensure DB is connected before handling the request
+    return await handler(event, context);
+};
