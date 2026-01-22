@@ -35,91 +35,93 @@
     </div>
 
     <script>
-        // Set your live Render URL here
-        const API_URL = "/api"; 
+    // Just "/api" is enough because netlify.toml handles the rest
+    const API_URL = "/api"; 
 
-        let mode = 'login'; 
+    let mode = 'login'; 
 
-        function setMode(newMode) {
-            mode = newMode;
-            const title = document.getElementById("title");
-            const btn = document.getElementById("mainBtn");
-            const recoveryInput = document.getElementById("recovery");
-            const passInput = document.getElementById("pass");
-            const normalLinks = document.getElementById("normalLinks");
-            const backLink = document.getElementById("backLink");
+    function setMode(newMode) {
+        mode = newMode;
+        const title = document.getElementById("title");
+        const btn = document.getElementById("mainBtn");
+        const recoveryInput = document.getElementById("recovery");
+        const passInput = document.getElementById("pass");
+        const normalLinks = document.getElementById("normalLinks");
+        const backLink = document.getElementById("backLink");
 
-            // Reset UI
-            recoveryInput.style.display = "none";
-            passInput.style.display = "block";
-            normalLinks.style.display = "flex";
-            backLink.style.display = "none";
-            passInput.placeholder = "Password";
+        // Reset UI
+        recoveryInput.style.display = "none";
+        passInput.style.display = "block";
+        normalLinks.style.display = "flex";
+        backLink.style.display = "none";
+        passInput.placeholder = "Password";
 
-            if (mode === 'register') {
-                title.innerText = "New Account";
-                btn.innerText = "Create Account";
-            } else if (mode === 'forgot') {
-                title.innerText = "Reset Password";
-                btn.innerText = "Update Password";
-                passInput.placeholder = "Enter New Password";
-                recoveryInput.style.display = "block"; 
-                normalLinks.style.display = "none";
-                backLink.style.display = "block";
-            } else {
-                title.innerText = "HR Login";
-                btn.innerText = "Login";
-            }
+        if (mode === 'register') {
+            title.innerText = "New Account";
+            btn.innerText = "Create Account";
+        } else if (mode === 'forgot') {
+            title.innerText = "Reset Password";
+            btn.innerText = "Update Password";
+            passInput.placeholder = "Enter New Password";
+            recoveryInput.style.display = "block"; 
+            normalLinks.style.display = "none";
+            backLink.style.display = "block";
+        } else {
+            title.innerText = "HR Login";
+            btn.innerText = "Login";
+        }
+    }
+
+    async function handleAuth() {
+        const username = document.getElementById("user").value;
+        const password = document.getElementById("pass").value;
+        const recoveryKey = document.getElementById("recovery").value;
+
+        if (!username || !password) {
+            alert("Please fill in all fields");
+            return;
         }
 
-        async function handleAuth() {
-            const username = document.getElementById("user").value;
-            const password = document.getElementById("pass").value;
-            const recoveryKey = document.getElementById("recovery").value;
+        // CORRECTED: Removed the extra "/api" from the endpoints
+        let endpoint = `${API_URL}/auth/login`;
+        let payload = { username, password };
 
-            if (!username || !password) {
-                alert("Please fill in all fields");
-                return;
-            }
+        if (mode === 'register') {
+            endpoint = `${API_URL}/auth/register`;
+        } else if (mode === 'forgot') {
+            if (!recoveryKey) { alert("Master Key is required!"); return; }
+            endpoint = `${API_URL}/auth/reset-password`;
+            payload = { username, recoveryKey, newPassword: password };
+        }
 
-            // Updated endpoints to use the live API_URL
-            let endpoint = `${API_URL}/api/auth/login`;
-            let payload = { username, password };
+        try {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
 
-            if (mode === 'register') {
-                endpoint = `${API_URL}/api/auth/register`;
-            } else if (mode === 'forgot') {
-                if (!recoveryKey) { alert("Master Key is required!"); return; }
-                endpoint = `${API_URL}/api/auth/reset-password`;
-                payload = { username, recoveryKey, newPassword: password };
-            }
+            const result = await response.json();
 
-            try {
-                const response = await fetch(endpoint, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                const result = await response.json();
-
-                if (response.ok) {
-                    if (mode === 'login') {
-                        localStorage.setItem("isLoggedIn", "true");
-                        window.location.href = "index.html";
-                    } else {
-                        alert(result.message || "Success!");
-                        setMode('login'); 
-                    }
+            if (response.ok) {
+                if (mode === 'login') {
+                    localStorage.setItem("isLoggedIn", "true");
+                    window.location.href = "index.html";
                 } else {
-                    alert(result.error || "Action failed. Check credentials.");
+                    alert(result.message || "Success!");
+                    setMode('login'); 
                 }
-            } catch (err) {
-                console.error(err);
-                alert("Server error. Check if your Render backend is awake!");
+            } else {
+                alert(result.error || "Action failed. Check credentials.");
             }
+        } catch (err) {
+            console.error(err);
+            // UPDATED ERROR MESSAGE
+            alert("Connection Error. Please check your Netlify Function logs.");
         }
-    </script>
+    }
+</script>
 </body>
 
 </html>
+
