@@ -142,13 +142,22 @@ window.deleteApp = async (id) => {
     }
 };
 
+// --- Replace ONLY this function in your app.js ---
 window.restoreApp = async (id) => {
-    // Corrected URL
-    await fetch(`${API_URL}/applications/restore/${id}`, { method: 'POST' });
-    alert("Application Restored!");
-    loadData();
-};
+    // We use the existing POST route to update the isDeleted status
+    const response = await fetch(`${API_URL}/applications`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: id, isDeleted: false })
+    });
 
+    if (response.ok) {
+        alert("✅ Application Restored!");
+        loadData();
+    } else {
+        alert("❌ Failed to restore.");
+    }
+};
 $("openBinBtn").onclick = () => {
     isBinOpen = !isBinOpen;
     $("openBinBtn").innerText = isBinOpen ? "📁 View Active" : "🗑 Open Bin";
@@ -171,3 +180,4 @@ $("clearFilters").onclick = () => {
 
 fillDropdowns();
 loadData();
+
