@@ -3,7 +3,7 @@ if (localStorage.getItem("isLoggedIn") !== "true") {
     window.location.href = "auth.html";
 }
 
-const API_URL = "https://appl-r2if.onrender.com"; // Your Live Render URL
+const API_URL = "/api"; // Your Live Render URL
 
 window.logout = () => {
     localStorage.removeItem("isLoggedIn");
@@ -166,4 +166,5 @@ $("clearFilters").onclick = () => {
 };
 
 fillDropdowns();
+
 loadData();
